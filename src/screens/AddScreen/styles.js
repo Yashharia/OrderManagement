@@ -4,7 +4,6 @@ export default StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
-    paddingTop: 20,
   },
   formContainer: {
     width: "100%",
@@ -12,7 +11,9 @@ export default StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 35,
     paddingVertical: 10,
+    flexDirection: 'row'
   },
+  halfWidth:{width:'50%'},
   input: {
     height: 48,
     borderRadius: 5,
@@ -49,9 +50,21 @@ export default StyleSheet.create({
     borderBottomColor: "#cccccc",
     borderBottomWidth: 1,
     paddingBottom: 16,
+    display:'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between'
   },
   entityText: {
     fontSize: 20,
     color: "#333333",
   },
+
+  entityContainer: {marginTop: 16,borderBottomColor: "#cccccc",borderBottomWidth: 1,padding: 10,borderRadius: 10},
+  entityText: {fontSize: 20,color: "#333333",},
+  orderDetails:{flex: 1},
+  completed:{backgroundColor: '#cdffc2'},
+  pending:{backgroundColor: '#f0adc4'},
+  row:{flexDirection: 'row', justifyContent:'space-between'},
+  orderButtons:{flexDirection: 'row', justifyContent:'flex-end', width:'20%'},
+  singleBtn:{justifyContent:'center', width: '50%', alignItems:'center'},
 });

@@ -52,5 +52,12 @@ export default StyleSheet.create({
     entityText: {
         fontSize: 20,
         color: '#333333'
+    },
+    menuItem:{
+        paddingHorizontal:20,
+        paddingVertical:5
+    },
+    menuItemText:{
+        fontSize:18
     }
 })

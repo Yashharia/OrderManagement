@@ -44,13 +44,23 @@ export default StyleSheet.create({
     fontSize: 20,
   },
   heading:{
-    fontSize: 25,
-    marginBottom: 5
+    fontSize: 20,
+    marginBottom: 5,
+    fontWeight: 'bold'
   },
   normal_text:{
     fontSize: 18,
   },  
-  row:{flexDirection:"row", flexWrap: 'wrap'},
-  halfWidth:{width: '50%',fontSize: 18},
+
+  card:{ width:"100%", justifyContent:"space-between", marginBottom: 5, backgroundColor: '#C6CFF7', borderRadius: 5, padding: 10},
+  row:{flexDirection:"row", flexWrap:"wrap", marginBottom:10},
+  fullWidth:{width: '100%',fontSize: 18, marginBottom:5},
   box:{width:'30%', marginRight: "2%", borderColor:1, borderColor: '#000', borderWidth: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', height: 50, marginBottom: 10},
+  inactive:{backgroundColor: '#f0adc4'},
+  active:{backgroundColor: '#9bebb0'},
+  singleGoods: {borderTopColor: "#788eec",borderTopWidth: 1,},
+  description: {flexDirection: "row",flexWrap: "wrap",marginHorizontal: "-2%",},
+  descriptionInput: {width: "30%",marginLeft: "2%",},
+  inactive:{backgroundColor: '#f0adc4',},
+  btnactive:{backgroundColor: '#9bebb0'},
 });

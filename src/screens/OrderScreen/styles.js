@@ -16,8 +16,6 @@ export default StyleSheet.create({
     borderRadius: 5,
     overflow: "hidden",
     backgroundColor: "white",
-    marginTop: 10,
-    marginBottom: 10,
     paddingLeft: 16,
     width: "100%",
   },
@@ -31,6 +29,7 @@ export default StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 20,
     width: "100%",
+    marginBottom: 10,
   },
   buttonText: {
     color: "white",
@@ -64,8 +63,7 @@ export default StyleSheet.create({
     flex: 2,
   },
   singleGoods: {
-    borderTopColor: "#788eec",
-    borderTopWidth: 1,
+    marginTop:10
   },
   title: {
     width: "100%",
@@ -82,12 +80,14 @@ export default StyleSheet.create({
   description: {
     flexDirection: "row",
     flexWrap: "wrap",
+    marginHorizontal: "-2%",
   },
   descriptionInput: {
     width: "30%",
     marginLeft: "2%",
+    marginTop: 5,
   },
-  containerAuto:{position: 'relative', height: 50},
+  containerAuto:{position: 'relative', height: 50, marginVertical:10},
  
   itemText: {
     fontSize: 15,
@@ -101,8 +101,18 @@ export default StyleSheet.create({
     position: "absolute",
     right: 0,
     top: 0,
-    zIndex: 1,
-    padding: 5,
-    backgroundColor: 'white'
+    zIndex: 5,
+    backgroundColor: 'white',
   },
+  active:{
+    overflow: 'scroll',
+    height:150,
+  },
+  inactive:{
+    backgroundColor: '#f0adc4',
+  },
+  btnactive:{
+    backgroundColor: '#9bebb0'
+  },
+  containerStyle:{justifyContent: 'center', padding: 0, backgroundColor: 'red'}
 });
