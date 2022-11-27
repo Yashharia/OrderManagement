@@ -1,31 +1,49 @@
 import React, { useEffect, useState } from "react";
-import {FlatList,Text, TouchableOpacity,   View,} from "react-native";
+import {FlatList,Text, TouchableOpacity, ScrollView,  View,} from "react-native";
 import styles from "./styles";
 import { firebase } from "../../firebase/config";
 import { Feather } from '@expo/vector-icons';
 import { Picker } from "@react-native-picker/picker";
+import Autocomplete from "react-native-autocomplete-input";
+import { AntDesign } from '@expo/vector-icons';
+import { NotificationClick} from '../component/Notification';
 
 export default function AddScreen({ route, navigation }) {
   var collectionname = route.params.name;
   var edit = false;
   const [entities, setEntities] = useState([]);
+  
   const [nameList, setNameList] = useState([]);
   const [name, setName] = useState('');
+  const [nameHideResult, setNameHideResult] = useState(true);
+  let queriedNameList = nameList && name ? nameList.filter((item) => {if (item.name.toLowerCase().includes(name.toLowerCase())) return true; }) : nameList;
+  
+  const [quality, setQuality] = useState('');
+  const [qualityList, setQualityList] = useState([]);
+  const [qualityHideResult, setQualityHideResult] = useState(true);
+  let queriedQualityList = qualityList && quality ? qualityList.filter((item) => {;if (item.name.toLowerCase().includes(quality.toLowerCase())) return true; }) : qualityList;
+  
   const [orderStatus, setOrderStatus] = useState('');
 
   const entityRef = firebase.firestore().collection(collectionname);
+  const qualityRef = firebase.firestore().collection('Quality');
   var orders = firebase.firestore().collection('Orders');
   const fetchData = async () => {
     entityRef.orderBy('name').get().then((collections) => {
         var auto = [];
-        collections.forEach((doc) => {
-          var currentObj = { id: doc.id, data: doc.data() };
-          auto.push(currentObj);
-        });
+        collections.forEach((doc) => { var currentObj = { id: doc.id, name: doc.data().name }; auto.push(currentObj); });
         setNameList(auto);
       });
+      if(collectionname != "Transport" && collectionname != "Quality"){
+        qualityRef.orderBy('name').get().then((collections) => {
+          var auto = [];
+          collections.forEach((doc) => { var currentObj = { id: doc.id, name: doc.data().name }; auto.push(currentObj); });
+          setQualityList(auto);
+        });
+      }
   };
 
+  
   const filterShow = async () => {
     var auto = [];
     if(name != "") {
@@ -35,9 +53,11 @@ export default function AddScreen({ route, navigation }) {
       if(collectionname == "Transport")orders = orders.where('transport','==',name)
       if(collectionname == "Quality")orders = orders.where('orderGoods','array-contains-any',[name])
     }
+    if(quality != "") orders = orders.where('orderGoods','array-contains-any',[quality])
     if(orderStatus != "") orders = orders.where('orderStatus','==',orderStatus)
     orders = orders.orderBy("createdAt", "desc")
     orders.get().then((collections) => {
+      console.log('got data');
       collections.forEach((doc) => {
         var currentObj = { id: doc.id, data: doc.data() };
         auto.push(currentObj);
@@ -48,6 +68,7 @@ export default function AddScreen({ route, navigation }) {
 
   useEffect(() => {
     fetchData();
+    NotificationClick({navigation});
   }, []);
 
  
@@ -99,18 +120,55 @@ export default function AddScreen({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.formContainer}>
+    <>
+    <View style={[styles.formContainer, {zIndex: 9}]}>
+       
+          <View style={[styles.containerAuto,  !nameHideResult && queriedNameList.length > 0 ? styles.active : "",]}>
+            <View style={[styles.autocompleteContainer]}>
+                <Autocomplete 
+                placeholder="Name" autoCorrect={false}
+                  data={queriedNameList} value={name} onChangeText={(text)=>{setName(text);}}
+                  onFocus={() => setNameHideResult(false)} hideResults={nameHideResult}
+                  inputContainerStyle={[styles.input]} 
+                  listContainerStyle={{height: 150, paddingBottom: 50, zIndex: 99}}
+                  flatListProps={{
+                    keyboardShouldPersistTaps: "always",
+                    keyExtractor: (_, idx) => idx,
+                    renderItem: ({ item, index }) => (
+                      <TouchableOpacity onPress={() => {setName(item.name); setNameHideResult(true)}}>
+                        <Text style={styles.itemText}>{item.name}</Text>
+                      </TouchableOpacity>
+                    ),
+                  }}/>
+            </View>
+            <AntDesign name="caretdown" size={18} color="black" style={styles.uparrow}  onPress={()=>setNameHideResult(!nameHideResult)}/>
+          </View>
+      
+      
+        {qualityList.length > 0 &&(
+          <View style={[styles.containerAuto, !qualityHideResult && queriedQualityList.length > 0 ? styles.active : "", {marginLeft: 5}]}>
+              <View style={[styles.autocompleteContainer]}>
+                <Autocomplete placeholder="Quality" autoCorrect={false}
+                  data={queriedQualityList} value={quality} onChangeText={(text)=>{setQuality(text);}}
+                  onFocus={() => setQualityHideResult(false)} hideResults={qualityHideResult}
+                  inputContainerStyle={styles.input} 
+                  flatListProps={{
+                    keyboardShouldPersistTaps: "always",
+                    keyExtractor: (_, idx) => idx,
+                    renderItem: ({ item, index }) => (
+                      <TouchableOpacity onPress={() => {setQuality(item.name); setQualityHideResult(true)}}>
+                        <Text style={styles.itemText}>{item.name}</Text>
+                      </TouchableOpacity>
+                    ),
+                  }}/>
+              </View>
+              <AntDesign name="caretdown" size={18} color="black" style={styles.uparrow}  onPress={()=>setQualityHideResult(!qualityHideResult)}/>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.formContainer}>          
         <View style={styles.halfWidth}>
-          <Text style={styles.borderBottom}>{collectionname} Name</Text>
-          <Picker style={{ backgroundColor: "#fff" }} selectedValue={name} onValueChange={(itemValue, itemIndex) => setName(itemValue)}>
-          {nameList.map((data) => {
-            return(<Picker.Item label={data.data.name} value={data.data.name} />)
-          })}
-          </Picker>
-        </View>
-        <View style={[styles.halfWidth,{marginLeft:5}]}>
-          <Text style={styles.borderBottom}>Order Status</Text>
           <Picker style={{ backgroundColor: "#fff" }} selectedValue={orderStatus} onValueChange={(itemValue, itemIndex) => setOrderStatus(itemValue)}>
             <Picker.Item label="All" value="" />
             <Picker.Item label="Pending" value="pending" />
@@ -118,12 +176,13 @@ export default function AddScreen({ route, navigation }) {
             <Picker.Item label="Cancelled" value="cancelled" />
           </Picker>
         </View>
+        <View style={styles.halfWidth}>
+          <TouchableOpacity style={styles.button} onPress={() => filterShow()}>
+            <Text style={styles.buttonText}>Filter</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <View>
-        <TouchableOpacity style={styles.button} onPress={() => filterShow()}>
-          <Text style={styles.buttonText}>Filter</Text>
-        </TouchableOpacity>
-      </View>
+      
       {(entities.length>0)?(
         <View style={styles.listContainer}>
           <Text>{collectionname} Order List</Text>
@@ -135,6 +194,6 @@ export default function AddScreen({ route, navigation }) {
           />
         </View>
       ) : (<View style={styles.listContainer}><Text>No result</Text></View>)}
-    </View>
+    </>
   );
 }

@@ -1,26 +1,66 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Text, TouchableOpacity, View, Alert, TextInput } from "react-native";
+import { FlatList, Text, TouchableOpacity, View, Alert, TextInput, Button } from "react-native";
 import styles from "./styles";
 import { firebase } from "../../firebase/config";
 import { Feather, Entypo, AntDesign } from "@expo/vector-icons";
-// import {AddOrderBtn} from "./component/AddOrderBtn";
 import { Picker } from "@react-native-picker/picker";
-
+import { NotificationClick} from '../component/Notification';
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
 export default function OrderList({ route, navigation }) {
   var edit = route.params.edit;
   var filter = route.params.filter;
+  var erase = (route.params.erase)? true :false
 
   const [entities, setEntities] = useState([]);
   const [orderStatus, setOrderStatus] = useState('pending');
+  const [orderSort, setOrderSort] = useState('desc');
   const [searchID, setSearchID] = useState("");
   var entityRef = firebase.firestore().collection("Orders");
+
+  //date start
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const[startDate, setStartDate] = useState(new Date())
+  const[endDate, setEndDate] = useState(new Date())
+
+  const handleStartDate = (date) => {
+    setStartDate(date); setShowStartDatePicker(false);
+  };
+
+  const handleEndDate = (date) => {
+    setEndDate(date); setShowEndDatePicker(false);
+  };
+  //date end
+
+  const eraseAlert = () =>{
+    Alert.alert("Are you sure you want to erase the orders?", `This will delete orders from ${dateFormated(startDate)} to ${dateFormated(endDate)}`, [{
+      text: "Delete orders",
+      onPress: () => {EraseOrders();},
+    }, { text: "Cancel", onPress: () => { console.log("OK Pressed")}}])
+  }
+  const EraseOrders = async () => {
+    console.log('erase', startDate, endDate)
+    entityRef.where('createdAt', '>=', startDate).where('createdAt', '<=', endDate).get().then((collections) => {
+      collections.forEach(async (doc)  => {
+        await entityRef.doc(doc.id).delete();
+      })
+    })
+    fetchData()
+  }
   
-  
-  const fetchData = async (orderstatus = "pending") => {
-    if(searchID != "") {console.log('search',searchID, orderStatus);entityRef = entityRef.where("orderID","==", parseInt(searchID))}
-    if(searchID == "") entityRef = entityRef.where('orderStatus', '==', orderstatus)
-    entityRef = entityRef.orderBy("createdAt", "desc")
+  const fetchData = async (orderstatus = orderStatus, ordersort = orderSort) => {
+
+    if(searchID != "") {entityRef = entityRef.where("orderID","==", parseInt(searchID))}
+    if(startDate && endDate && erase){
+      console.log(startDate, endDate, "onside date")
+      entityRef = entityRef.where('createdAt', '>=', startDate).where('createdAt', '<=', endDate)
+    }
+    if(searchID == "" && !erase) {
+      if(orderStatus != "all" && !erase) entityRef = entityRef.where('orderStatus', '==', orderstatus)
+      entityRef = entityRef.orderBy("orderID", ordersort)
+    }
+    
     entityRef.get()
       .then((collections) => {
         var auto = [];
@@ -29,6 +69,7 @@ export default function OrderList({ route, navigation }) {
           auto.push(currentObj);
         });
         setEntities(auto);
+        // console.log(auto)
       }).catch(error=> console.log(error));
   };
 
@@ -53,6 +94,7 @@ export default function OrderList({ route, navigation }) {
 
   useEffect(() => {
     fetchData();
+    NotificationClick({navigation});
   }, []);
 
   const renderEntity = ({ item, index }) => {
@@ -74,7 +116,10 @@ export default function OrderList({ route, navigation }) {
         >
           <View style={styles.row}>
             <View style={styles.orderDetails}>
-              <TouchableOpacity onPress={() => navigation.navigate("Single order", { id: item.id, showEdit: edit })}>
+              <TouchableOpacity onPress={() => {
+                (edit)? navigation.navigate("Edit Single Order", { id: item.id, edit: true }):
+                navigation.navigate("Single order", { id: item.id })
+                }}>
                 <Text>{item.data.orderID} - {date} - {item.data.buyerName} - {item.data.orderStatus}</Text>
               </TouchableOpacity>
             </View>
@@ -91,25 +136,73 @@ export default function OrderList({ route, navigation }) {
     );
   };
 
-  
+  const dateFormated = (date) => {
+    return `${date.getDate()}-${date.getMonth()+1}-${date.getFullYear()}`
+  }
+
+  const d = new Date();
+  let year = d.getFullYear() - 1;
 
   return (
     <View style={styles.container}>
+
+      {(erase) ? (
+        <>
+        <View style={[styles.row, {width: "100%", padding: 20}]}>
+          <View>
+            <Button title="Start Date" onPress={()=>{setShowStartDatePicker(true)}} />
+            <DateTimePickerModal isVisible={showStartDatePicker} mode="date" onConfirm={handleStartDate} 
+              onCancel={() =>{setShowStartDatePicker(false)}}
+              maximumDate={new Date(year, 2, 1)} />
+            <Text>{dateFormated(startDate)} </Text>
+          </View>
+
+          <View>
+            <Button title="End Date" onPress={()=>{setShowEndDatePicker(true)}} />
+            <DateTimePickerModal isVisible={showEndDatePicker} mode="date" onConfirm={handleEndDate} 
+              onCancel={() =>{setShowEndDatePicker(false)}}
+              maximumDate={new Date(year, 2, 1)}
+              minimumDate={startDate} />
+            <Text> {dateFormated(endDate)}</Text>
+          </View>
+        </View>
+        <View style={[styles.row, {width: "100%", padding: 20}]}>
+          <TouchableOpacity style={styles.button} onPress={() => {fetchData()}}>
+            <Text style={styles.buttonText}>Filter orders</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, {backgroundColor: 'red'} ]} onPress={() => {eraseAlert()}}>
+            <Text style={styles.buttonText}>Erase orders</Text>
+          </TouchableOpacity>
+        </View>
+      </>
+      ): (
       <View style={{ width: '100%', paddingHorizontal: 20, paddingTop:10}}>
-        <Text style={{marginBottom: 5}}>Order status</Text>
-        <Picker style={{ backgroundColor: "#fff"}} selectedValue={orderStatus} onValueChange={(itemValue, itemIndex) => {
-            setOrderStatus(itemValue); fetchData(itemValue);
-          }
-          }>
-          <Picker.Item label="Pending" value="pending" />
-          <Picker.Item label="Completed" value="completed" />
-          <Picker.Item label="Cancelled" value="cancelled" />
-        </Picker>
-        <TextInput style={[styles.input]} placeholder="Search by order number" value={searchID} onChangeText={(text) => setSearchID(text)} keyboardType="number-pad"/>
-        <TouchableOpacity style={styles.button} onPress={() => fetchData()}>
-          <Text style={styles.buttonText}>Search</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.row}>
+          <Picker style={[{ backgroundColor: "#fff"}, styles.flexOne]} selectedValue={orderStatus} onValueChange={(itemValue, itemIndex) => {
+              setOrderStatus(itemValue);
+            }
+            }>
+            <Picker.Item label="Pending" value="pending" />
+            <Picker.Item label="Completed" value="completed" />
+            <Picker.Item label="Cancelled" value="cancelled" />
+            <Picker.Item label="All" value="all" />
+          </Picker>
+          <Picker style={[{ backgroundColor: "#fff", marginLeft: 5}, styles.flexOne]} selectedValue={orderSort} onValueChange={(itemValue, itemIndex) => {
+              setOrderSort(itemValue);}}>
+            <Picker.Item label="DESC" value="desc" />
+            <Picker.Item label="ASC" value="asc" />
+          </Picker>
+          <TouchableOpacity style={[styles.button, {width: '20%'} ]} onPress={() => fetchData(orderStatus, orderSort)}>
+              <Text style={styles.buttonText}>OK</Text>
+            </TouchableOpacity>
+        </View>
+        <View style={[styles.row, {borderTopWidth: 0.5, marginTop:5}]}>
+          <TextInput style={[styles.input, styles.flexOne]} placeholder="Order number" value={searchID} onChangeText={(text) => setSearchID(text)} keyboardType="number-pad"/>
+          <TouchableOpacity style={[styles.button, styles.flexOne ]} onPress={() => fetchData()}>
+            <Text style={styles.buttonText}>Search</Text>
+          </TouchableOpacity>
+        </View>
+      </View>)}
       
       {entities && (
         <View style={styles.listContainer}>

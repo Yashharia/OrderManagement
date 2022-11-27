@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1036716277261",
+    "project_id": "order-management-f063a",
+    "storage_bucket": "order-management-f063a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1036716277261:android:7dce235c4dd12497e29f44",
+        "android_client_info": {
+          "package_name": "com.yashharia.ordermanagement"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1036716277261-20b3rogap6ntllq6kjhbrivi5bhkpmdn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yashharia.ordermanagement",
+            "certificate_hash": "985273f75b0cecd73646620a3054ff20a2d5c199"
+          }
+        },
+        {
+          "client_id": "1036716277261-8ltqn0no3ri7abj924g263ksrpj3cge7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.yashharia.ordermanagement",
+            "certificate_hash": "c45e8d0198e927414b711986a4fe9097f370e129"
+          }
+        },
+        {
+          "client_id": "1036716277261-ikljqrhfjqrf2uvkg9ki3im1csuaabmo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgyghbDrmzBSTUa3ebibTsRidHoZhuwgk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1036716277261-ikljqrhfjqrf2uvkg9ki3im1csuaabmo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

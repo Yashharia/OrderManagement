@@ -26,12 +26,11 @@ export default StyleSheet.create({
     height: 47,
     borderRadius: 5,
     backgroundColor: "#788eec",
-    width: 80,
-    marginTop: 10,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 20,
-    width: "100%",
+    flex: 1,
+    marginLeft: 5
   },
   buttonText: {
     color: "white",
@@ -44,7 +43,8 @@ export default StyleSheet.create({
   orderDetails:{flex: 1},
   completed:{backgroundColor: '#cdffc2'},
   pending:{backgroundColor: '#f0adc4'},
-  row:{flexDirection: 'row', justifyContent:'space-between'},
+  row:{flexDirection: 'row', justifyContent:'space-between', alignItems: "center"},
   orderButtons:{flexDirection: 'row', justifyContent:'flex-end', width:'20%'},
   singleBtn:{justifyContent:'center', width: '50%', alignItems:'center'},
+  flexOne:{flex:1},
 });

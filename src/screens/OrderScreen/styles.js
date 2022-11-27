@@ -91,7 +91,7 @@ export default StyleSheet.create({
  
   itemText: {
     fontSize: 15,
-    margin: 2,
+    padding: 4,
     color: 'black'
   },
   autocompleteContainer: {
@@ -108,11 +108,12 @@ export default StyleSheet.create({
     overflow: 'scroll',
     height:150,
   },
-  inactive:{
-    backgroundColor: '#f0adc4',
-  },
-  btnactive:{
-    backgroundColor: '#9bebb0'
-  },
-  containerStyle:{justifyContent: 'center', padding: 0, backgroundColor: 'red'}
+  inactive:{backgroundColor: '#f0adc4',},
+  btnactive:{backgroundColor: '#9bebb0'},
+  containerStyle:{justifyContent: 'center', padding: 0, backgroundColor: 'red'},
+  uparrow:{position: "absolute", right: 10, top: 12, zIndex: 6,},
+  designStyle:{marginTop:10},
+  loading:{display:"flex", height:"100%", justifyContent: "center", alignItems: "center", opacity: 0.5, position: 'absolute', top: 0,
+left: 0, width: "100%", backgroundColor:"blue", zIndex: 999},
+loadingText:{color:'white', fontWeight: 'bold'}
 });

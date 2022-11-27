@@ -2,14 +2,15 @@ import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View, BackHandler } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Picker } from "@react-native-picker/picker";
+import * as Notifications from "expo-notifications";
 
 import styles from "./styles";
 import { firebase } from "../../firebase/config";
 import { printPDF } from "../component/PrintPDF";
+import {sendPushNotification, NavigatorClick} from '../component/Notification';
 
 export default function SingleOrderScreen({ route, navigation }) {
   const single_id = route.params.id;
-  const showEdit = route.params.showEdit;
   const goodsFormat = {
     quality: "",
     rate: "",
@@ -22,11 +23,8 @@ export default function SingleOrderScreen({ route, navigation }) {
   const [orderStatus, setOrderStatus] = useState();
   const [singleID, setSingleID] = useState(single_id);
   const entityRef = firebase.firestore().collection("Orders");
-  const fetchData = () => {
-    entityRef
-      .doc(singleID)
-      .get()
-      .then((collections) => {
+  const fetchData = (id) => {
+    entityRef.doc(id).get().then((collections) => {
         setOrderData(collections.data());
         setGoods(collections.data().goods);
         setOrderStatus(collections.data().orderStatus);
@@ -34,15 +32,16 @@ export default function SingleOrderScreen({ route, navigation }) {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(single_id);
+    NavigatorClick({navigation});
   }, []);
 
   const goodsComponent = (i) => {
-    return (
+    return ( 
       <View style={styles.singleGoods} key={i}>
         <View>
-          <Text style={{fontWeight: 'bold', marginVertical:5}}>Quality: {goods[i]["quality"]}</Text>
-          <Text style={{fontWeight: 'bold', marginBottom:10}}>Rate: {goods[i]["rate"]}</Text>
+        {(goods[i]["quality"]) ? (<Text style={{fontWeight: 'bold', marginVertical:5}}>Quality: {goods[i]["quality"]}</Text>) : ""}
+        {(goods[i]["rate"]) ? (<Text style={{fontWeight: 'bold', marginBottom:10}}>Rate: {goods[i]["rate"]}</Text>) : ""}
           </View>
         <View>
           <Text>Design / Color Full</Text>
@@ -79,6 +78,8 @@ export default function SingleOrderScreen({ route, navigation }) {
     );
   };
   const onAddButtonPress = () => {
+    if(orderStatus != "pending")
+    sendPushNotification(orderStatus,orderData,singleID);
     entityRef.doc(single_id).update('goods', goods,'orderStatus',orderStatus).then((_doc) => { alert("Data updated"); }).catch((error) => {alert(error);});
     setChanged(false)
   }
@@ -95,10 +96,7 @@ export default function SingleOrderScreen({ route, navigation }) {
     var orderDate = orderData.createdAt.toDate().toDateString();
     return (
       <View style={styles.container}>
-        <KeyboardAwareScrollView
-          style={{ flex: 1, width: "100%" }}
-          keyboardShouldPersistTaps="always"
-        >
+        <KeyboardAwareScrollView style={{ flex: 1, width: "100%" }} keyboardShouldPersistTaps="always">
           <View style={styles.formContainer}>
             <Text style={styles.normal_text}>
               Order number: {orderData.orderID}
@@ -110,26 +108,29 @@ export default function SingleOrderScreen({ route, navigation }) {
           </View>
           <View style={styles.formContainer}>
             <Text style={styles.heading}>Buyer details</Text>
-            <Text style={styles.normal_text}>Name: {orderData.buyerName}</Text>
-            <Text style={styles.normal_text}>
-              Address: {orderData.buyerAddress}{" "}
-            </Text>
+            {(orderData.buyerName)? (<Text style={styles.normal_text}>Name: {orderData.buyerName}</Text>): ""}
+            {orderData.buyerAddress?(<Text style={styles.normal_text}>Address: {orderData.buyerAddress}</Text>):""}
+            {orderData.buyerNumber?(<Text style={styles.normal_text}>Number: {orderData.buyerNumber}</Text>):""}
+            {orderData.buyerGST?(<Text style={styles.normal_text}>GST Number: {orderData.buyerGST}</Text>):""}
           </View>
           <View style={styles.formContainer}>
             <Text style={styles.heading}>Consignee details</Text>
-            <Text style={styles.normal_text}>
-              Name: {orderData.consigneeName}
-            </Text>
-            <Text style={styles.normal_text}>
-              Address: {orderData.consigneeAddress}{" "}
-            </Text>
+            {orderData.consigneeName?(<Text style={styles.normal_text}>Name: {orderData.consigneeName}</Text>):""}
+            {orderData.consigneeAddress?(<Text style={styles.normal_text}>Address: {orderData.consigneeAddress}</Text>):""}
+            {orderData.consigneeNumber?(<Text style={styles.normal_text}>Number: {orderData.consigneeNumber}</Text>):""}
+            {orderData.consigneeGST?(<Text style={styles.normal_text}>GST Number: {orderData.consigneeGST}</Text>):""}
           </View>
           <View style={styles.formContainer}>
             <Text style={styles.heading}>Other details</Text>
-            <Text style={styles.normal_text}>
-              Transport: {orderData.transport}
-            </Text>
-            <Text style={styles.normal_text}> Broker: {orderData.broker}</Text>
+            {orderData.transport?(<Text style={styles.normal_text}>Transport: {orderData.transport}</Text>):""}
+            {orderData.broker?(<Text style={styles.normal_text}> Broker: {orderData.broker}</Text>):""}
+            {orderData.brokerNumber?(<Text style={styles.normal_text}> Broker Number: {orderData.brokerNumber}</Text>):""}
+            {(orderData.brokerage != 0) && (<Text style={styles.normal_text}> Brokerage: {orderData.brokerage}</Text>)}
+            {(orderData.discount != 0) && ( <Text style={styles.normal_text}> Discount: {orderData.discount}</Text>)}
+          </View>
+          <View style={styles.formContainer}>
+            {orderData.remarks?(<Text style={styles.normal_text}>Remarks: {orderData.remarks}</Text>):""}
+            {orderData.totalQuantity?(<Text style={styles.normal_text}>Total Quantity: {orderData.totalQuantity}</Text>):""}
           </View>
           
           {orderData.goods && (
@@ -161,29 +162,10 @@ export default function SingleOrderScreen({ route, navigation }) {
             </TouchableOpacity>
           </View>
           
-          {showEdit && (
-            <>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => {
-                  navigation.navigate("Edit Single Order", {
-                    id: single_id,
-                    edit: true,
-                  });
-                }}
-              >
-                <Text style={styles.buttonText}>Edit order</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => {
-                  printPDF(single_id, orderData);
-                }}
-              >
-                <Text style={styles.buttonText}>Print Order</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <TouchableOpacity style={styles.button} onPress={() => {printPDF(single_id, orderData);}}>
+            <Text style={styles.buttonText}>Print Order</Text>
+          </TouchableOpacity>
+            
         </KeyboardAwareScrollView>
       </View>
     );

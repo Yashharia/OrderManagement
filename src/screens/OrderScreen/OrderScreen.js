@@ -1,22 +1,18 @@
 import React, { useEffect, useState } from "react";
-import {
-  FlatList,
-  Keyboard,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  Alert,
-} from "react-native";
+import { FlatList,Keyboard,Text,TextInput,TouchableOpacity,View,Alert,Button} from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Autocomplete from "react-native-autocomplete-input";
 import styles from "./styles";
-import { firebase } from "../../firebase/config";
+import { firebase, orderCountID } from "../../firebase/config";
 import { ScrollView } from "react-native-gesture-handler";
 import { printPDF } from "../component/PrintPDF";
 import { Picker } from "@react-native-picker/picker";
+import { AntDesign } from '@expo/vector-icons';
+import {sendPushNotification, NotificationClick} from '../component/Notification';
+
 
 export default function OrderScreen({ route, navigation }) {
+
   var single_id = route.params.id;
   var edit = route.params.edit;
   var allCollectionList = ["Buyer", "Consignee", "Transport", "Broker", "Quality"];
@@ -27,6 +23,9 @@ export default function OrderScreen({ route, navigation }) {
     description: [""],
     descriptionHalf: [""],
   };
+
+  const [buttonStatus, setButtonStatus] = useState(true);
+
   const [goods, setGoods] = useState([goodsFormat]);
   const [goodsInOrder, setGoodsInOrder] = useState([]);
 
@@ -50,6 +49,8 @@ export default function OrderScreen({ route, navigation }) {
         })
       : allBuyers;
   const [buyerAddress, setBuyerAddress] = useState("");
+  const [buyerNumber, setBuyerNumber] = useState("");
+  const [buyerGST, setBuyerGST] = useState("");
   const [buyerHideResult, setBuyerHideResult] = useState(true);
 
   // BUYER DATA end
@@ -57,6 +58,8 @@ export default function OrderScreen({ route, navigation }) {
   // consignee DATA start
   const [consigneeName, setConsigneeName] = useState("");
   const [consigneeAddress, setConsigneeAddress] = useState("");
+  const [consigneeNumber, setConsigneeNumber] = useState("");
+  const [consigneeGST, setConsigneeGST] = useState("");
   const [allConsignee, setAllConsignee] = useState([]);
   const [consigneeHideResult, setConsigneeHideResult] = useState(true);
   let queriedConsignee =
@@ -80,6 +83,8 @@ export default function OrderScreen({ route, navigation }) {
       : allTransport;
 
   const [broker, setBroker] = useState("");
+  const [brokerNumber, setBrokerNumber] = useState("");
+  const [brokerage, setBrokerage] = useState(0);
   const [allBrokers, setAllBrokers] = useState([]);
   const [brokerHideResult, setBrokerHideResult] = useState(true);
   let queriedBrokers =
@@ -101,6 +106,12 @@ export default function OrderScreen({ route, navigation }) {
         })
       : allQuality;
 
+  const [discount, setDiscount] = useState(0);
+  const [remarks, setRemarks] = useState("");
+  const [totalQuantity, setTotalQuantity] = useState(0);
+
+  const [createdAt,setCreatedAt]=useState(new Date());
+
   const entityRef = firebase.firestore().collection("Orders");
   const db = firebase.firestore();
 
@@ -116,8 +127,14 @@ export default function OrderScreen({ route, navigation }) {
         const data = { name: value };
         if (collectionName == "Buyer") {
           data["address"] = buyerAddress;
+          data["number"] = buyerNumber;
+          data["gst"] = buyerGST;
         } else if (collectionName == "Consignee") {
           data["address"] = consigneeAddress;
+          data["number"] = consigneeNumber;
+          data["gst"] = consigneeGST;
+        }else if (collectionName == "Broker") {
+          data["number"] = brokerNumber;
         }
         db.collection(collectionName).add(data);
       });
@@ -138,56 +155,68 @@ export default function OrderScreen({ route, navigation }) {
     if (buyerName && buyerName.length > 0) {
       const timestamp = firebase.firestore.FieldValue.serverTimestamp();
       var currentOrderID = orderID;
-      db.collection("orderCount").doc("y4JTEbcUbJRIx45a7WlF").get().then((collections) => {
+
+      db.collection("orderCount").doc(orderCountID).get().then((collections) => {
           if(currentOrderID == "") currentOrderID = parseInt(collections.data().counter) + 1;
-          console.log(currentOrderID)
           const data = {
             orderID: currentOrderID,
-            buyerName: buyerName,
-            buyerAddress: buyerAddress,
-            consigneeName: consigneeName,
-            consigneeAddress: consigneeAddress,
-            transport: transport,
-            broker: broker,
+            buyerName: buyerName, buyerAddress: (buyerAddress)? buyerAddress:"", buyerNumber: (buyerNumber)? buyerNumber:"",buyerGST: (buyerGST) ? buyerGST:"",
+            consigneeName: consigneeName,consigneeAddress: (consigneeAddress)? consigneeAddress: "",consigneeNumber: (consigneeNumber)? consigneeNumber : "",consigneeGST: (consigneeGST)? consigneeGST: "",
+            transport: transport,broker: broker,brokerNumber: (brokerNumber) ? brokerNumber : "",
+            brokerage: (brokerage)? brokerage : "",discount: (discount)? discount : "",
             goods: goods,
-            orderStatus: orderStatus,
-            createdAt: timestamp,
-            orderGoods: goodsInOrder,
+            remarks: (remarks)? remarks : "",totalQuantity: (totalQuantity)? totalQuantity : "",
+            orderStatus: orderStatus,orderGoods: goodsInOrder,
             date: dd + "/" + mm + "/" + yyyy,
           };
           if (edit) {
-            entityRef.doc(single_id).update(data).then((_doc) => { 
+            data['createdAt'] = createdAt
+            entityRef.doc(single_id).update(data).then((_doc) => {
+              createNewEntry(); 
+              sendPushNotification('Order edited',data,single_id);
               Alert.alert("Order created", "", [{
                 text: "Download PDF",
                 onPress: () => {printPDF(currentOrderID, data);},
-              }, { text: "OK", onPress: () => console.log("OK Pressed") },
+              }, { text: "OK", onPress: () => { console.log("OK Pressed"); navigation.navigate('Edit Order') }},
+              setButtonStatus(true)
             ]);
-             }).catch((error) => {alert(error);});
+             }).catch((error) => {alert(error); setButtonStatus(true)} );
           } else {
+            data['createdAt'] = timestamp
             entityRef.add(data).then((_doc) => {
-                db.collection("orderCount").doc("y4JTEbcUbJRIx45a7WlF").update({
+              console.log(_doc.id)
+                db.collection("orderCount").doc(orderCountID).update({
                     counter: firebase.firestore.FieldValue.increment(1),
                   });
                 createNewEntry();
+                sendPushNotification('New order',data, _doc.id);
                 Alert.alert("Order created", "", [{
                     text: "Download PDF",
                     onPress: () => {printPDF(_doc.id, data);},
                   }, { text: "OK", onPress: () => {console.log("OK Pressed"); fetchAll(allCollectionList)} },
                 ]);
+                setButtonStatus(true);
                 setGoods([goodsFormat]);
-                setBuyerName(""); setBuyerAddress(""); setBuyerHideResult(true);
+                setBuyerName(""); setBuyerAddress(""); setBuyerGST(''); setBuyerNumber(''); setBuyerHideResult(true);
 
-                setConsigneeName(""); setConsigneeAddress(""); setConsigneeHideResult(true);
+                setConsigneeName(""); setConsigneeAddress(""); setConsigneeGST(''); setConsigneeNumber(''); setConsigneeHideResult(true);
+
+                setBrokerage(''); setDiscount('');
+                setRemarks(''); setTotalQuantity('');
 
                 setTransport(""); setTransportHideResult(true);
-                setBroker(""); setBrokerHideResult(true);
+                setBroker("");setBrokerNumber(""); setBrokerHideResult(true);
 
                 Keyboard.dismiss();
               })
               .catch((error) => {
                 alert(error);
+                setButtonStatus(true);
               });
           }
+        }).catch((error) => {
+          alert(error);
+          setButtonStatus(true);
         });
     }
   };
@@ -200,6 +229,7 @@ export default function OrderScreen({ route, navigation }) {
 
     if(key == "quality") currOrderGoods[i] = value;
     setGoods(addGoods);
+    console.log(currOrderGoods)
     setGoodsInOrder(currOrderGoods);
   };
   const onHandleChangeDescription = (goodskey, key, value, i) => {
@@ -229,7 +259,7 @@ export default function OrderScreen({ route, navigation }) {
   const goodsComponent = (i) => {
     return (
       <View style={styles.singleGoods} key={i}>
-        <View style={{ flexDirection: "row", marginBottom: 10 }}>
+        <View style={{ flexDirection: "row"}}>
           <View style={{ zIndex: 6, flex: 1, height: 58 }}>
             <ScrollView
                   style={[
@@ -241,7 +271,8 @@ export default function OrderScreen({ route, navigation }) {
                   inputContainerStyle={styles.input}
                   placeholder="Quality" autoCorrect={false} data={queriedQuality} value={goods[i]["quality"]} 
                   onChangeText={(text) => {onHandleChange("quality", text, i), setQuality(text)}}
-                  onFocus={() => {setQualityHideResult(false)}} hideResults={qualityHideResult} 
+                  onFocus={() => {setQualityHideResult(false)}}
+                  hideResults={qualityHideResult} 
                   flatListProps={{
                     keyboardShouldPersistTaps: "always",
                     keyExtractor: (_, idx) => idx,
@@ -258,17 +289,17 @@ export default function OrderScreen({ route, navigation }) {
                   }}
                 />
           </ScrollView>
+          <AntDesign name="caretdown" size={18} color="black" style={styles.uparrow}  onPress={()=>setQualityHideResult(!qualityHideResult)}/>
         </View>
           <TextInput
             style={[styles.input, {width:'100%', flex: 1, marginLeft: 5 }]}
             placeholder="Rate"
             onFocus={() => setQualityHideResult(true)}
             onChangeText={(text) => onHandleChange("rate", text, i)}
-            keyboardType="number-pad"
-            value={goods[i]["rate"]}
+            value={goods[i]["rate"]} keyboardType="number-pad"
           />
         </View>
-        <View>
+        <View style={styles.designStyle}>
           <Text>Design / Color Full</Text>
           <View style={styles.description}>
             {goods[i].description.map((data, desc_i) => {
@@ -277,17 +308,14 @@ export default function OrderScreen({ route, navigation }) {
                     key={desc_i}
                     onFocus={() => setQualityHideResult(true)}
                     style={[styles.input, styles.descriptionInput]}
-                    onChangeText={(text) =>
-                      onHandleChangeDescription(i, "description", text, desc_i)
-                    }
-                    keyboardType="number-pad"
+                    onChangeText={(text) =>onHandleChangeDescription(i, "description", text, desc_i)}
                     value={data.value}
                   />
                 );
             })}
           </View>
         </View>
-        <View>
+        <View style={styles.designStyle}>
           <Text>Design / Color Half</Text>
           <View style={styles.description}>
             {goods[i].descriptionHalf.map((data, desc_i) => {
@@ -296,15 +324,7 @@ export default function OrderScreen({ route, navigation }) {
                     onFocus={() => setQualityHideResult(true)}
                     key={desc_i}
                     style={[styles.input, styles.descriptionInput]}
-                    onChangeText={(text) =>
-                      onHandleChangeDescription(
-                        i,
-                        "descriptionHalf",
-                        text,
-                        desc_i
-                      )
-                    }
-                    keyboardType="number-pad"
+                    onChangeText={(text) =>onHandleChangeDescription(i,"descriptionHalf",text,desc_i)}
                     value={data.value}
                   />
                 );
@@ -327,7 +347,7 @@ export default function OrderScreen({ route, navigation }) {
   var firebaseDB = firebase.firestore();
   function doWork(text, data) {
     const resObj = data.docs.map((res) => res.data());
-    if (text === "Buyer") setAllBuyers(resObj);
+    if (text === "Buyer") {setAllBuyers(resObj);}
     if (text == "Consignee") setAllConsignee(resObj);
     if (text == "Transport") setAllTransport(resObj);
     if (text == "Broker") setAllBrokers(resObj);
@@ -352,36 +372,54 @@ export default function OrderScreen({ route, navigation }) {
         setOrderStatus(orderData.orderStatus);
         setBuyerName(orderData.buyerName);
         setBuyerAddress(orderData.buyerAddress);
+        setBuyerNumber(orderData.buyerNumber);
+        setBuyerGST(orderData.buyerGST);
         setConsigneeName(orderData.consigneeName);
         setConsigneeAddress(orderData.consigneeAddress);
+        setConsigneeNumber(orderData.consigneeNumber);
+        setConsigneeGST(orderData.consigneeGST);
         setTransport(orderData.transport);
         setBroker(orderData.broker);
+        setBrokerNumber(orderData.brokerNumber);
+        setBrokerage(orderData.brokerage);
+        setDiscount(orderData.discount);
         setGoods(orderData.goods);
+        setGoodsInOrder(orderData.orderGoods);
+        setRemarks(orderData.remarks);
+        setTotalQuantity(orderData.totalQuantity);
         setOrderID(orderData.orderID);
+        setCreatedAt(orderData.createdAt);
       });
   };
 
   useEffect(() => {
     fetchAll(allCollectionList);
     if (single_id) fetchEditDoc(single_id);
+    NotificationClick({navigation});
   }, []);
 
-  function setBuyerDetails(i) {
-    var currentVal = allBuyers[i];
-    setBuyerName(currentVal.name);
-    setBuyerAddress(currentVal.address);
+  function setBuyerDetails(item) {
+    setBuyerName(item.name);
+    setBuyerAddress(item.address);
+    setBuyerNumber(item.number);
+    setBuyerGST(item.gst);
     setBuyerHideResult(true);
   }
 
-  function setConsigneeDetails(i) {
-    var currentVal = allConsignee[i];
-    setConsigneeName(currentVal.name);
-    setConsigneeAddress(currentVal.address);
+  function setConsigneeDetails(item) {
+    setConsigneeName(item.name);
+    setConsigneeAddress(item.address);
+    setConsigneeNumber(item.number);
+    setConsigneeGST(item.gst);
     setConsigneeHideResult(true);
   }
 
+
+
   return (
+
     <View style={styles.container}>
+      {(!buttonStatus) && (<View style={styles.loading}><Text style={styles.loadingText}>Loading...</Text></View>)}
       <KeyboardAwareScrollView
         style={{ flex: 1, width: "100%" }}
         keyboardShouldPersistTaps="always"
@@ -406,7 +444,7 @@ export default function OrderScreen({ route, navigation }) {
                 autoCorrect={false}
                 data={queriedBuyers}
                 value={buyerName}
-                onChangeText={setBuyerName}
+                onChangeText={(text)=>setBuyerName(text.replace('.'," "))}
                 onFocus={() => setBuyerHideResult(false)}
                 hideResults={buyerHideResult}
                 inputContainerStyle={styles.input}
@@ -414,13 +452,14 @@ export default function OrderScreen({ route, navigation }) {
                   keyboardShouldPersistTaps: "always",
                   keyExtractor: (_, idx) => idx,
                   renderItem: ({ item, index }) => (
-                    <TouchableOpacity onPress={() => setBuyerDetails(index)}>
+                    <TouchableOpacity onPress={() => setBuyerDetails(item)}>
                       <Text style={styles.itemText}>{item.name}</Text>
                     </TouchableOpacity>
                   ),
                 }}
               />
             </ScrollView>
+            <AntDesign name="caretdown" size={18} color="black" style={styles.uparrow}  onPress={()=>setBuyerHideResult(!buyerHideResult)}/>
           </View>
           <TextInput
             placeholder="Address"
@@ -430,6 +469,8 @@ export default function OrderScreen({ route, navigation }) {
             multiline={true}
             numberOfLines={4}
           />
+          <TextInput placeholder="Phone Number" style={[styles.input, {marginTop: 10}]} onChangeText={(text) => setBuyerNumber(text)} keyboardType="number-pad" value={buyerNumber}/>
+          <TextInput placeholder="GST Number" style={[styles.input, {marginTop: 10}]} onChangeText={(text) => setBuyerGST(text)} value={buyerGST}/>
 
           <Text style={styles.borderBottom}>Consignee Details</Text>
 
@@ -447,7 +488,7 @@ export default function OrderScreen({ route, navigation }) {
                 autoCorrect={false}
                 data={queriedConsignee}
                 value={consigneeName}
-                onChangeText={setConsigneeName}
+                onChangeText={(text)=>{setConsigneeName(text.replace('.', ' '))}}
                 onFocus={() => setConsigneeHideResult(false)}
                 hideResults={consigneeHideResult}
                 inputContainerStyle={styles.input}
@@ -455,13 +496,14 @@ export default function OrderScreen({ route, navigation }) {
                   keyboardShouldPersistTaps: "always",
                   keyExtractor: (_, idx) => idx,
                   renderItem: ({ item, index }) => (
-                    <TouchableOpacity onPress={() => setConsigneeDetails(index)} >
+                    <TouchableOpacity onPress={() => setConsigneeDetails(item)} >
                       <Text style={styles.itemText}>{item.name}</Text>
                     </TouchableOpacity>
                   ),
                 }}
               />
             </ScrollView>
+            <AntDesign name="caretdown" size={18} color="black" style={styles.uparrow}  onPress={()=>setConsigneeHideResult(!consigneeHideResult)}/>
           </View>
 
           <TextInput
@@ -472,6 +514,9 @@ export default function OrderScreen({ route, navigation }) {
             numberOfLines={4}
             value={consigneeAddress}
           />
+          <TextInput placeholder="Phone Number" style={[styles.input, {marginTop: 10}]} onChangeText={(text) => setConsigneeNumber(text)} keyboardType="number-pad" value={consigneeNumber}/>
+          <TextInput placeholder="GST Number" style={[styles.input, {marginTop: 10}]} onChangeText={(text) => setConsigneeGST(text)} value={consigneeGST}/>
+
 
           <View style={{ zIndex: 7, }}>
             <View style={styles.containerAuto}>
@@ -488,7 +533,7 @@ export default function OrderScreen({ route, navigation }) {
                   autoCorrect={false}
                   data={queriedTransport}
                   value={transport}
-                  onChangeText={setTransport}
+                  onChangeText={(text)=> {setTransport(text.replace('.', ' '))}}
                   onFocus={() => setTransportHideResult(false)}
                   hideResults={transportHideResult}
                   inputContainerStyle={styles.input}
@@ -508,6 +553,7 @@ export default function OrderScreen({ route, navigation }) {
                   }}
                 />
               </ScrollView>
+            <AntDesign name="caretdown" size={18} color="black" style={styles.uparrow}  onPress={()=>setTransportHideResult(!transportHideResult)}/>
             </View>
           </View>
 
@@ -523,26 +569,32 @@ export default function OrderScreen({ route, navigation }) {
               >
                 <Autocomplete
                   placeholder="Brokers"
-                  autoCorrect={false} data={queriedBrokers} value={broker} onChangeText={setBroker}
-                  onFocus={() => setBrokerHideResult(false)} hideResults={brokerHideResult}
+                  autoCorrect={false} data={queriedBrokers} value={broker} 
+                  onChangeText={(text)=>{setBroker(text.replace('.',' '))}}
+                  onFocus={() => setBrokerHideResult(false)}
+                  hideResults={brokerHideResult}
                   inputContainerStyle={styles.input} 
                   flatListProps={{
                     keyboardShouldPersistTaps: "always",
                     keyExtractor: (_, idx) => idx,
                     renderItem: ({ item, index }) => (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setBroker(item.name);
-                          setBrokerHideResult(true);
-                        }}
-                      >
+                      <TouchableOpacity onPress={() => { setBroker(item.name); setBrokerNumber(item.number); setBrokerHideResult(true);}}>
                         <Text style={styles.itemText}>{item.name}</Text>
                       </TouchableOpacity>
                     ),
                   }}
                 />
               </ScrollView>
+              <AntDesign name="caretdown" size={18} color="black" style={styles.uparrow}  onPress={()=>setBrokerHideResult(!brokerHideResult)}/>
             </View>
+            <TextInput placeholder="Phone Number" style={[styles.input]} onChangeText={(text) => setBrokerNumber(text)} keyboardType="number-pad" value={brokerNumber}/>
+          </View>
+
+          <View style={{ flexDirection: "row", marginVertical: 20 }}>
+            <TextInput placeholder="Brokerage" style={[styles.input, {flex:1}]} 
+              onChangeText={(text) => setBrokerage(text)} value={brokerage} keyboardType="number-pad"/>
+            <TextInput placeholder="Discount" style={[styles.input, {flex:1, marginLeft:5}]} 
+              onChangeText={(text) => setDiscount(text)} value={discount} keyboardType="number-pad"/>
           </View>
 
           <Text style={styles.borderBottom}>Quality</Text>
@@ -560,6 +612,11 @@ export default function OrderScreen({ route, navigation }) {
               <Text style={styles.buttonText}>Add Quality</Text>
             </TouchableOpacity>
          
+            <View style={{ flexDirection: "row", marginBottom: 10 }}>
+              <TextInput placeholder="Remarks" style={[styles.input, {flex:1}]} onChangeText={(text) => setRemarks(text)} value={remarks}/>
+              <TextInput placeholder="Total quantity" style={[styles.input, {flex:1, marginLeft:5}]} onChangeText={(text) => setTotalQuantity(text)} value={totalQuantity}/>
+            </View>
+
           {edit && (
             <View>
               <Text style={styles.borderBottom}>Order status</Text>
@@ -577,11 +634,13 @@ export default function OrderScreen({ route, navigation }) {
             </View>
           )}
 
-          <TouchableOpacity style={styles.button} onPress={() => onAddButtonPress(edit)}>
+          <TouchableOpacity style={styles.button} enabled={buttonStatus} onPress={() => {onAddButtonPress(edit); setButtonStatus(!buttonStatus)}}>
             <Text style={styles.buttonText}>Save order</Text>
           </TouchableOpacity>
+         
         </View>
       </KeyboardAwareScrollView>
     </View>
   );
 }
+
