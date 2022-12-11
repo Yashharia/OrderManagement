@@ -63,7 +63,7 @@ export const printPDF = async (single_id, orderData) => {
     
     <table style="width: 100%">
         <tr>
-            <td style="width: 50%"><b>GST:</b> 27AAEFJ571301ZN</td>
+            <td style="width: 50%"><b>GST:</b> 27AAEFJ5713D1ZN</td>
             <td style="width: 50%; text-align:right";><b>Mob:</b> 9321772374<br>8698999322<br><b>Email:</b> jktexs@gmail.com</td>
         </tr>
     </table>
