@@ -10,7 +10,6 @@ import { Picker } from "@react-native-picker/picker";
 import { AntDesign } from '@expo/vector-icons';
 import {sendPushNotification, NotificationClick} from '../component/Notification';
 
-
 export default function OrderScreen({ route, navigation }) {
 
   var single_id = route.params.id;
@@ -84,7 +83,7 @@ export default function OrderScreen({ route, navigation }) {
 
   const [broker, setBroker] = useState("");
   const [brokerNumber, setBrokerNumber] = useState("");
-  const [brokerage, setBrokerage] = useState(0);
+  const [brokerage, setBrokerage] = useState();
   const [allBrokers, setAllBrokers] = useState([]);
   const [brokerHideResult, setBrokerHideResult] = useState(true);
   let queriedBrokers =
@@ -106,7 +105,7 @@ export default function OrderScreen({ route, navigation }) {
         })
       : allQuality;
 
-  const [discount, setDiscount] = useState(0);
+  const [discount, setDiscount] = useState();
   const [remarks, setRemarks] = useState("");
   const [totalQuantity, setTotalQuantity] = useState(0);
 
@@ -129,6 +128,7 @@ export default function OrderScreen({ route, navigation }) {
           data["address"] = buyerAddress;
           data["number"] = buyerNumber;
           data["gst"] = buyerGST;
+          data["broker"] = broker;
         } else if (collectionName == "Consignee") {
           data["address"] = consigneeAddress;
           data["number"] = consigneeNumber;
@@ -140,6 +140,7 @@ export default function OrderScreen({ route, navigation }) {
       });
     }
   };
+  
   const createNewEntry = () => {
     const collectionArr = ["Buyer", "Consignee", "Transport", "Broker"];
     const collectionValArr = [buyerName, consigneeName, transport, broker];
@@ -151,73 +152,92 @@ export default function OrderScreen({ route, navigation }) {
     }
   };
 
+
+  //on submit run this use effect
+  useEffect(()=>{
+    if(buttonStatus == false){
+        onAddButtonPress()
+    }else{
+      return;
+    }
+  }, [buttonStatus])
+
   const onAddButtonPress = () => {
-    if (buyerName && buyerName.length > 0) {
-      const timestamp = firebase.firestore.FieldValue.serverTimestamp();
-      var currentOrderID = orderID;
+    if(brokerage == undefined || discount == undefined || brokerage == "" || discount == ""){
+      setButtonStatus(true)
+      console.log(buttonStatus)
+      alert('Brokerage and discount should not be empty');
+    }else{
+      if (buyerName && buyerName.length > 0) {
+        const timestamp = firebase.firestore.FieldValue.serverTimestamp();
+        var currentOrderID = orderID;
 
-      db.collection("orderCount").doc(orderCountID).get().then((collections) => {
-          if(currentOrderID == "") currentOrderID = parseInt(collections.data().counter) + 1;
-          const data = {
-            orderID: currentOrderID,
-            buyerName: buyerName, buyerAddress: (buyerAddress)? buyerAddress:"", buyerNumber: (buyerNumber)? buyerNumber:"",buyerGST: (buyerGST) ? buyerGST:"",
-            consigneeName: consigneeName,consigneeAddress: (consigneeAddress)? consigneeAddress: "",consigneeNumber: (consigneeNumber)? consigneeNumber : "",consigneeGST: (consigneeGST)? consigneeGST: "",
-            transport: transport,broker: broker,brokerNumber: (brokerNumber) ? brokerNumber : "",
-            brokerage: (brokerage)? brokerage : "",discount: (discount)? discount : "",
-            goods: goods,
-            remarks: (remarks)? remarks : "",totalQuantity: (totalQuantity)? totalQuantity : "",
-            orderStatus: orderStatus,orderGoods: goodsInOrder,
-            date: dd + "/" + mm + "/" + yyyy,
-          };
-          if (edit) {
-            data['createdAt'] = createdAt
-            entityRef.doc(single_id).update(data).then((_doc) => {
-              createNewEntry(); 
-              sendPushNotification('Order edited',data,single_id);
-              Alert.alert("Order created", "", [{
-                text: "Download PDF",
-                onPress: () => {printPDF(currentOrderID, data);},
-              }, { text: "OK", onPress: () => { console.log("OK Pressed"); navigation.navigate('Edit Order') }},
-              setButtonStatus(true)
-            ]);
-             }).catch((error) => {alert(error); setButtonStatus(true)} );
-          } else {
-            data['createdAt'] = timestamp
-            entityRef.add(data).then((_doc) => {
-              console.log(_doc.id)
-                db.collection("orderCount").doc(orderCountID).update({
-                    counter: firebase.firestore.FieldValue.increment(1),
-                  });
-                createNewEntry();
-                sendPushNotification('New order',data, _doc.id);
+        db.collection("orderCount").doc(orderCountID).get().then((collections) => {
+            if(currentOrderID == "") currentOrderID = parseInt(collections.data().counter) + 1;
+            const data = {
+              orderID: currentOrderID,
+              buyerName: buyerName, buyerAddress: (buyerAddress)? buyerAddress:"", buyerNumber: (buyerNumber)? buyerNumber:"",buyerGST: (buyerGST) ? buyerGST:"",
+              consigneeName: consigneeName,consigneeAddress: (consigneeAddress)? consigneeAddress: "",consigneeNumber: (consigneeNumber)? consigneeNumber : "",consigneeGST: (consigneeGST)? consigneeGST: "",
+              transport: transport,broker: broker,brokerNumber: (brokerNumber) ? brokerNumber : "",
+              brokerage: (brokerage)? brokerage : "",discount: (discount)? discount : "",
+              goods: goods,
+              remarks: (remarks)? remarks : "",totalQuantity: (totalQuantity)? totalQuantity : "",
+              orderStatus: orderStatus,orderGoods: goodsInOrder,
+              date: dd + "/" + mm + "/" + yyyy,
+            };
+            if (edit) {
+              data['createdAt'] = createdAt
+              entityRef.doc(single_id).update(data).then((_doc) => {
+                createNewEntry(); 
+                sendPushNotification('Order edited',data,single_id);
                 Alert.alert("Order created", "", [{
-                    text: "Download PDF",
-                    onPress: () => {printPDF(_doc.id, data);},
-                  }, { text: "OK", onPress: () => {console.log("OK Pressed"); fetchAll(allCollectionList)} },
-                ]);
-                setButtonStatus(true);
-                setGoods([goodsFormat]);
-                setBuyerName(""); setBuyerAddress(""); setBuyerGST(''); setBuyerNumber(''); setBuyerHideResult(true);
+                  text: "Download PDF",
+                  onPress: () => {printPDF(currentOrderID, data);},
+                }, { text: "OK", onPress: () => { console.log("OK Pressed"); navigation.navigate('Edit Order') }},
+                setButtonStatus(true)
+              ]);
+              }).catch((error) => {alert(error); setButtonStatus(true)} );
+            } else {
+              data['createdAt'] = timestamp
+              entityRef.add(data).then((_doc) => {
+                console.log(_doc.id)
+                  db.collection("orderCount").doc(orderCountID).update({
+                      counter: firebase.firestore.FieldValue.increment(1),
+                    });
+                  createNewEntry();
+                  sendPushNotification('New order',data, _doc.id);
+                  Alert.alert("Order created", "", [{
+                      text: "Download PDF",
+                      onPress: () => {printPDF(_doc.id, data);},
+                    }, { text: "OK", onPress: () => {console.log("OK Pressed"); fetchAll(allCollectionList)} },
+                  ]);
+                  setButtonStatus(true);
+                  setGoods([goodsFormat]);
+                  setBuyerName(""); setBuyerAddress(""); setBuyerGST(''); setBuyerNumber(''); setBuyerHideResult(true);
 
-                setConsigneeName(""); setConsigneeAddress(""); setConsigneeGST(''); setConsigneeNumber(''); setConsigneeHideResult(true);
+                  setConsigneeName(""); setConsigneeAddress(""); setConsigneeGST(''); setConsigneeNumber(''); setConsigneeHideResult(true);
 
-                setBrokerage(''); setDiscount('');
-                setRemarks(''); setTotalQuantity('');
+                  setBrokerage(); setDiscount();
+                  setRemarks(''); setTotalQuantity('');
 
-                setTransport(""); setTransportHideResult(true);
-                setBroker("");setBrokerNumber(""); setBrokerHideResult(true);
+                  setTransport(""); setTransportHideResult(true);
+                  setBroker("");setBrokerNumber(""); setBrokerHideResult(true);
 
-                Keyboard.dismiss();
-              })
-              .catch((error) => {
-                alert(error);
-                setButtonStatus(true);
-              });
-          }
-        }).catch((error) => {
-          alert(error);
-          setButtonStatus(true);
-        });
+                  Keyboard.dismiss();
+                })
+                .catch((error) => {
+                  alert(error);
+                  setButtonStatus(true);
+                });
+            }
+          }).catch((error) => {
+            alert(error);
+            setButtonStatus(true);
+          });
+      }else{
+        alert("Buyer name cannot be empty")
+        setButtonStatus(true);
+      }
     }
   };
   
@@ -229,7 +249,6 @@ export default function OrderScreen({ route, navigation }) {
 
     if(key == "quality") currOrderGoods[i] = value;
     setGoods(addGoods);
-    console.log(currOrderGoods)
     setGoodsInOrder(currOrderGoods);
   };
   const onHandleChangeDescription = (goodskey, key, value, i) => {
@@ -399,11 +418,20 @@ export default function OrderScreen({ route, navigation }) {
   }, []);
 
   function setBuyerDetails(item) {
+    console.log('setbuter details')
     setBuyerName(item.name);
     setBuyerAddress(item.address);
     setBuyerNumber(item.number);
     setBuyerGST(item.gst);
     setBuyerHideResult(true);
+    console.log(item.broker, 'broker')
+    setBroker(item.broker ?? '');
+    console.log(allBrokers,'allBrokers')
+    var obj = allBrokers.find(ele => ele.name === item.broker);
+    if (obj != undefined) {
+      const number = obj.number;
+      setBrokerNumber(number ?? '');
+    } 
   }
 
   function setConsigneeDetails(item) {
@@ -634,7 +662,9 @@ export default function OrderScreen({ route, navigation }) {
             </View>
           )}
 
-          <TouchableOpacity style={styles.button} enabled={buttonStatus} onPress={() => {onAddButtonPress(edit); setButtonStatus(!buttonStatus)}}>
+          <TouchableOpacity style={styles.button} enabled={buttonStatus} onPress={() => {
+            setButtonStatus(false);
+          }}>
             <Text style={styles.buttonText}>Save order</Text>
           </TouchableOpacity>
          

@@ -57,18 +57,30 @@ export default function AddScreen({ route, navigation }) {
     if(orderStatus != "") orders = orders.where('orderStatus','==',orderStatus)
     orders = orders.orderBy("createdAt", "desc")
     orders.get().then((collections) => {
-      console.log('got data');
       collections.forEach((doc) => {
         var currentObj = { id: doc.id, data: doc.data() };
         auto.push(currentObj);
       });
       setEntities(auto);
+      if(collectionname == "Quality" && name != "" && orderStatus == "pending"){
+        var filterArr = auto.filter(item => { // filter only if the quality is pending
+          var data = item['data']
+          var getCurrentQualityData = data['goods'].filter(singleQuality => singleQuality.quality == name)
+          var description = getCurrentQualityData[0].description.map(single=> single.status)
+          var descriptionHalf = getCurrentQualityData[0].descriptionHalf.map(single=>single.status)
+          var finalArr = [...description, ...descriptionHalf]
+          console.log(finalArr.includes(false), 'finalarr')
+          return finalArr.includes(false)
+        })
+        setEntities(filterArr);
+      }
     })
   };
 
   useEffect(() => {
     fetchData();
     NotificationClick({navigation});
+    if(collectionname == 'Quality') setOrderStatus('pending')
   }, []);
 
  

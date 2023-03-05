@@ -192,10 +192,11 @@ export default function OrderList({ route, navigation }) {
             <Picker.Item label="DESC" value="desc" />
             <Picker.Item label="ASC" value="asc" />
           </Picker>
-          <TouchableOpacity style={[styles.button, {width: '20%'} ]} onPress={() => fetchData(orderStatus, orderSort)}>
+          <TouchableOpacity style={[styles.button, {maxWidth: 40, paddingHorizontal:0} ]} onPress={() => fetchData(orderStatus, orderSort)}>
               <Text style={styles.buttonText}>OK</Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
         </View>
+        
         <View style={[styles.row, {borderTopWidth: 0.5, marginTop:5}]}>
           <TextInput style={[styles.input, styles.flexOne]} placeholder="Order number" value={searchID} onChangeText={(text) => setSearchID(text)} keyboardType="number-pad"/>
           <TouchableOpacity style={[styles.button, styles.flexOne ]} onPress={() => fetchData()}>

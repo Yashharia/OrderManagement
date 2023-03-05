@@ -39,7 +39,18 @@ export default StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-
+  autocompleteContainer: {
+    flex: 1,
+    width: "100%",
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
+    zIndex: 5,
+  },
+  itemText: {fontSize: 15,padding: 4,color: 'black'},
+  active:{overflow: 'scroll',height:150,backgroundColor: '#fff'},
+  containerAuto:{position: 'relative', height: 50, marginBottom:10,},
   entityContainer: {marginTop: 16,borderBottomColor: "#cccccc",borderBottomWidth: 1,padding: 10,borderRadius: 10},
   entityText: {fontSize: 20,color: "#333333",},
   orderDetails:{flex: 1},
@@ -49,6 +60,7 @@ export default StyleSheet.create({
   orderButtons:{flexDirection: 'row', justifyContent:'flex-end', width:'20%'},
   singleBtn:{justifyContent:'center', width: '50%', alignItems:'center'},
   flexOne:{flex:1},
+  uparrow:{position: "absolute", right: 10, top: 22, zIndex: 6,},
 
   formContainer: {width: "100%",paddingHorizontal: 35,paddingVertical: 10,},
 });
