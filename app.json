@@ -12,14 +12,18 @@
       "backgroundColor": "#ffffff"
     },
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/3faf612e-a973-470e-9537-07a5eb097b3e"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yashharia.ordermanagement"
+      "bundleIdentifier": "com.yashharia.ordermanagement",
+      "runtimeVersion": {
+        "policy": "sdkVersion"
+      }
     },
     "android": {
       "googleServicesFile": "./google-services.json",
@@ -27,9 +31,9 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.yashharia.ordermanagement"
+      "package": "com.yashharia.ordermanagement",
+      "runtimeVersion": "1.0.0"
     },
-    
     "web": {
       "favicon": "./assets/favicon.png"
     },
