@@ -21,7 +21,7 @@ export default function AddScreen({ route, navigation }) {
   const [quality, setQuality] = useState('');
   const [qualityList, setQualityList] = useState([]);
   const [qualityHideResult, setQualityHideResult] = useState(true);
-  let queriedQualityList = qualityList && quality ? qualityList.filter((item) => {;if (item.name.toLowerCase().includes(quality.toLowerCase())) return true; }) : qualityList;
+  let queriedQualityList = qualityList && quality ? qualityList.filter((item) => {if (item.name.toLowerCase().includes(quality.toLowerCase())) return true; }) : qualityList;
   
   const [orderStatus, setOrderStatus] = useState('');
 
@@ -66,11 +66,14 @@ export default function AddScreen({ route, navigation }) {
         var filterArr = auto.filter(item => { // filter only if the quality is pending
           var data = item['data']
           var getCurrentQualityData = data['goods'].filter(singleQuality => singleQuality.quality == name)
-          var description = getCurrentQualityData[0].description.map(single=> single.status)
-          var descriptionHalf = getCurrentQualityData[0].descriptionHalf.map(single=>single.status)
-          var finalArr = [...description, ...descriptionHalf]
-          console.log(finalArr.includes(false), 'finalarr')
-          return finalArr.includes(false)
+          if(getCurrentQualityData[0] != undefined){
+            console.log(getCurrentQualityData, 'getCurrentQualityData')
+            var description = getCurrentQualityData[0].description.map(single=> single.status)
+            var descriptionHalf = getCurrentQualityData[0].descriptionHalf.map(single=>single.status)
+            var finalArr = [...description, ...descriptionHalf]
+            console.log(finalArr.includes(false), 'finalarr')
+            return finalArr.includes(false)
+          }else{return false;}
         })
         setEntities(filterArr);
       }
