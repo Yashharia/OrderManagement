@@ -9,11 +9,9 @@ export default function HomeScreen({route}) {
     const [entities, setEntities] = useState([])
 
     const entityRef = firebase.firestore().collection('entities')
-    console.log('props ---------',route.params.user.id)
     const userID = route.params.user.id
 
     useEffect(() => {
-        console.log('inside use effect')
         entityRef
             .where("authorID", "==", userID)
             .orderBy('createdAt', 'desc')

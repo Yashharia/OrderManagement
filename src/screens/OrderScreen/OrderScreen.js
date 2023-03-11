@@ -115,7 +115,7 @@ export default function OrderScreen({ route, navigation }) {
   const db = firebase.firestore();
 
   const checkAndCreate = (collectionName, value) => {
-    if (value) {
+    if (value && collectionName != 'Quality') {
       var existRes = db.collection(collectionName).where("name", "==", value);
       var res;
       existRes.get().then((snap) => {
@@ -138,6 +138,13 @@ export default function OrderScreen({ route, navigation }) {
         }
         db.collection(collectionName).add(data);
       });
+    }else{
+      if (value){
+        const data = { name: value };
+        var strippedVal = value.replace(/\s/g, '').toLowerCase();
+        var nameArr = allQuality.map(item => item.name.replace(/\s/g, '').toLowerCase())
+        if(!nameArr.includes(strippedVal)) db.collection(collectionName).add(data);
+      }
     }
   };
   
@@ -162,7 +169,7 @@ export default function OrderScreen({ route, navigation }) {
     }
   }, [buttonStatus])
 
-  const onAddButtonPress = () => {
+  const onAddButtonPress = () => { //form submit
     if(brokerage == undefined || discount == undefined || brokerage == "" || discount == ""){
       setButtonStatus(true)
       console.log(buttonStatus)
@@ -249,7 +256,7 @@ export default function OrderScreen({ route, navigation }) {
 
     if(key == "quality") currOrderGoods[i] = value;
     setGoods(addGoods);
-    setGoodsInOrder(currOrderGoods);
+    setGoodsInOrder(currOrderGoods.map(item => item.replace(/\s/g, '').toLowerCase()));
   };
   const onHandleChangeDescription = (goodskey, key, value, i) => {
     const descGoods = [...goods];
@@ -290,7 +297,7 @@ export default function OrderScreen({ route, navigation }) {
                   inputContainerStyle={styles.input}
                   placeholder="Quality" autoCorrect={false} data={queriedQuality} value={goods[i]["quality"]} 
                   onChangeText={(text) => {onHandleChange("quality", text, i), setQuality(text)}}
-                  onFocus={() => {setQualityHideResult(false)}}
+                  onFocus={() => {setQualityHideResult(false); console.log(allQuality)}}
                   hideResults={qualityHideResult} 
                   flatListProps={{
                     keyboardShouldPersistTaps: "always",

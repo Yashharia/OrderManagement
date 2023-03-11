@@ -51,10 +51,10 @@ export default function AddScreen({ route, navigation }) {
       if(collectionname == "Consignee")orders = orders.where('consigneeName','==',name)
       if(collectionname == "Broker")orders = orders.where('broker','==',name)
       if(collectionname == "Transport")orders = orders.where('transport','==',name)
-      if(collectionname == "Quality")orders = orders.where('orderGoods','array-contains-any',[name])
+      if(collectionname == "Quality")orders = orders.where('orderGoods','array-contains-any',[name, name.replace(/\s/g, '').toLowerCase()])
     }
-    if(quality != "") orders = orders.where('orderGoods','array-contains-any',[quality])
-    if(orderStatus != "") orders = orders.where('orderStatus','==',orderStatus)
+    if(quality != "") orders = orders.where('orderGoods','array-contains-any',[quality, quality.replace(/\s/g, '').toLowerCase()])
+    if(orderStatus != "" && collectionname != "Quality") orders = orders.where('orderStatus','==',orderStatus)
     orders = orders.orderBy("createdAt", "desc")
     orders.get().then((collections) => {
       collections.forEach((doc) => {
@@ -62,17 +62,22 @@ export default function AddScreen({ route, navigation }) {
         auto.push(currentObj);
       });
       setEntities(auto);
-      if(collectionname == "Quality" && name != "" && orderStatus == "pending"){
+      console.log(orderStatus)
+      if(collectionname == "Quality" && name != "" && (orderStatus == "pending" || orderStatus == "completed")){
         var filterArr = auto.filter(item => { // filter only if the quality is pending
           var data = item['data']
           var getCurrentQualityData = data['goods'].filter(singleQuality => singleQuality.quality == name)
           if(getCurrentQualityData[0] != undefined){
-            console.log(getCurrentQualityData, 'getCurrentQualityData')
             var description = getCurrentQualityData[0].description.map(single=> single.status)
             var descriptionHalf = getCurrentQualityData[0].descriptionHalf.map(single=>single.status)
             var finalArr = [...description, ...descriptionHalf]
-            console.log(finalArr.includes(false), 'finalarr')
-            return finalArr.includes(false)
+            if(orderStatus == "pending"){
+              return finalArr.includes(false)
+            }else{
+              var trueArr = finalArr.filter(item => item !== undefined)
+              console.log('inside completed', trueArr, item.id)
+              return trueArr.every( (val, i, trueArr) => val === true );
+            }
           }else{return false;}
         })
         setEntities(filterArr);

@@ -85,7 +85,6 @@ export default function EditMaster({ route, navigation }) {
 
     if(collectionname != "Quality"){
       var dataVar = {};
-      console.log(newEditObj,'newEditObjnewEditObj')
       Object.entries(newEditObj).forEach(([key, value]) => {
         entityRef.doc(editData.id).update(newEditObj).then(()=> {setEdit(false); fetchData()})
         if(key == "gst") key="GST"
@@ -116,14 +115,14 @@ export default function EditMaster({ route, navigation }) {
       var oldQualityName = editData.data.name;
       var newQualityName = newEditObj.name;
       entityRef.doc(editData.id).update(newEditObj).then(()=> {setEdit(false); fetchData()})
-      orderColl.where('orderGoods','array-contains-any',[oldQualityName]).get().then((collections) => {
+      orderColl.where('orderGoods','array-contains-any',[oldQualityName,oldQualityName.replace(/\s/g, '').toLowerCase()]).get().then((collections) => {
         collections.forEach(async (doc)  => {
           var newVals = {}
           console.log(doc.id)
           var items = doc.data().orderGoods
           var goods = doc.data().goods
           var i = items.indexOf(oldQualityName);
-          items[i] = newQualityName;
+          items[i] = newQualityName.replace(/\s/g, '').toLowerCase();
           const updatedData = goods.map(x => (x.quality === oldQualityName ? { ...x, quality: newQualityName } : x));
           newVals["orderGoods"] = items
           newVals["goods"] = updatedData
