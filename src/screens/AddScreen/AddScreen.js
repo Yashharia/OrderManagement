@@ -54,32 +54,40 @@ export default function AddScreen({ route, navigation }) {
       if(collectionname == "Quality")orders = orders.where('orderGoods','array-contains-any',[name, name.replace(/\s/g, '').toLowerCase()])
     }
     if(quality != "") orders = orders.where('orderGoods','array-contains-any',[quality, quality.replace(/\s/g, '').toLowerCase()])
-    if(orderStatus != "" && collectionname != "Quality") orders = orders.where('orderStatus','==',orderStatus)
+    if(orderStatus != "" && (collectionname != "Quality" || orderStatus === 'cancelled')) orders = orders.where('orderStatus','==',orderStatus)
+
     orders = orders.orderBy("createdAt", "desc")
     orders.get().then((collections) => {
       collections.forEach((doc) => {
         var currentObj = { id: doc.id, data: doc.data() };
         auto.push(currentObj);
       });
+
       setEntities(auto);
-      console.log(orderStatus)
-      if(collectionname == "Quality" && name != "" && (orderStatus == "pending" || orderStatus == "completed")){
+      
+      if(collectionname == "Quality" && name != "" && (orderStatus == 'pending' || orderStatus == 'completed')){
         var filterArr = auto.filter(item => { // filter only if the quality is pending
           var data = item['data']
+          if(orderStatus == "pending" && data.orderStatus != "pending") return false; 
           var getCurrentQualityData = data['goods'].filter(singleQuality => singleQuality.quality == name)
           if(getCurrentQualityData[0] != undefined){
             var description = getCurrentQualityData[0].description.map(single=> single.status)
             var descriptionHalf = getCurrentQualityData[0].descriptionHalf.map(single=>single.status)
             var finalArr = [...description, ...descriptionHalf]
-            if(orderStatus == "pending"){
+            if(orderStatus == "pending"){ 
               return finalArr.includes(false)
             }else{
               var trueArr = finalArr.filter(item => item !== undefined)
-              console.log('inside completed', trueArr, item.id)
-              return trueArr.every( (val, i, trueArr) => val === true );
+              if(data.orderStatus == "completed") return true;
+              return (trueArr.every( (val, i, trueArr) => val === true ));
             }
           }else{return false;}
         })
+        if(orderStatus == 'completed') {
+          for (let i = 0; i < filterArr.length; i++) {
+            filterArr[i].data.orderStatus = 'completed';
+          }
+        }
         setEntities(filterArr);
       }
     })

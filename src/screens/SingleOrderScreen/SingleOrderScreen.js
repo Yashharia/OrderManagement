@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Text, TouchableOpacity, View, BackHandler } from "react-native";
+import { Text, TouchableOpacity, View, BackHandler, Alert } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Picker } from "@react-native-picker/picker";
 import * as Notifications from "expo-notifications";
@@ -77,10 +77,50 @@ export default function SingleOrderScreen({ route, navigation }) {
       </View>
     );
   };
+
+
+  function checkStatus(obj) {
+    for (let i = 0; i < obj.length; i++) {
+      const item = obj[i];
+      for (let prop in item) {
+        if (prop === "descriptionHalf" || prop === "description") {
+          const arr = item[prop];
+          for (let j = 0; j < arr.length; j++) {
+            console.log(arr[j].status, arr[j].value)
+            if(arr[j].status == undefined) continue
+            if (!arr[j].status) {
+              return false;
+            }
+          }
+        }
+      }
+    }
+    return true;
+  }
+
   const onAddButtonPress = () => {
-    if(orderStatus != "pending")
-    sendPushNotification(orderStatus,orderData,singleID);
-    entityRef.doc(single_id).update('goods', goods,'orderStatus',orderStatus).then((_doc) => { alert("Data updated"); }).catch((error) => {alert(error);});
+    if(orderStatus === "completed" || orderStatus === "cancelled"){
+      if(!checkStatus(goods)){
+        Alert.alert(
+          '',
+          `The order has some pending qualities, are you sure you want to mark the order ${orderStatus}`, 
+          [
+            {text: 'OK', onPress: () => {
+              entityRef.doc(single_id).update('goods', goods,'orderStatus',orderStatus).then((_doc) => { alert("Data updated"); }).catch((error) => {alert(error);});
+              sendPushNotification(orderStatus,orderData,singleID);
+            }
+          },
+            {text: 'Cancel', onPress: () => console.log('Cancel Pressed'), style: 'cancel'},
+          ],
+          {cancelable: false},
+        );  
+      }else{
+        entityRef.doc(single_id).update('goods', goods,'orderStatus',orderStatus).then((_doc) => { alert("Data updated"); }).catch((error) => {alert(error);});
+        sendPushNotification(orderStatus,orderData,singleID);
+      }
+    }else{ //run when pending
+      entityRef.doc(single_id).update('goods', goods,'orderStatus',orderStatus).then((_doc) => { alert("Data updated"); }).catch((error) => {alert(error);});
+    }
     setChanged(false)
   }
 
