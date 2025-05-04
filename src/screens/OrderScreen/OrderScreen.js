@@ -36,6 +36,7 @@ export default function OrderScreen({ route, navigation }) {
   // date end
 
   const [orderID, setOrderID] = useState("");
+  const [orderDate, setOrderDate] = useState(`${ dd + "/" + mm + "/" + yyyy}`)
 
   // BUYER DATA start
   const [allBuyers, setAllBuyers] = useState([]);
@@ -189,12 +190,12 @@ export default function OrderScreen({ route, navigation }) {
               brokerage: (brokerage)? brokerage : "",discount: (discount)? discount : "",
               goods: goods,
               remarks: (remarks)? remarks : "",totalQuantity: (totalQuantity)? totalQuantity : "",
-              orderStatus: orderStatus,orderGoods: goodsInOrder,
-              date: dd + "/" + mm + "/" + yyyy,
+              orderStatus: orderStatus,orderGoods: goodsInOrder, date: orderDate
             };
             if (edit) {
               data['createdAt'] = createdAt
               entityRef.doc(single_id).update(data).then((_doc) => {
+                console.log(_doc, 'after update');
                 createNewEntry(); 
                 sendPushNotification('Order edited',data,single_id);
                 Alert.alert("Order created", "", [{
@@ -414,6 +415,7 @@ export default function OrderScreen({ route, navigation }) {
         setRemarks(orderData.remarks);
         setTotalQuantity(orderData.totalQuantity);
         setOrderID(orderData.orderID);
+        setOrderDate(orderData.date);
         setCreatedAt(orderData.createdAt);
       });
   };

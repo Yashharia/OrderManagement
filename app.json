@@ -32,7 +32,9 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.yashharia.ordermanagement",
-      "runtimeVersion": "1.0.0"
+      "runtimeVersion": {
+        "policy": "sdkVersion"
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
